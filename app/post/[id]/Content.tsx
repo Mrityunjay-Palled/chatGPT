@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { XMarkIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import SocialLinks from "@/app/(shared)/SocialLinks";
+import { useEditor,EditorContent,Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import EditorMenuBar from "./EditorMenuBar";
+import CategoryAndEdit from "./CategoryAndEdit";
 
 type Props = {
   post: FormattedPost;
@@ -15,38 +19,58 @@ const Content = ({ post }: Props) => {
   const [titleError, setTitleError] = useState<string>("");
   const [content, setContent] = useState<string>(post.content);
   const [contentError, setContentError] = useState<string>("");
+  const [tempTitle, setTempTitle] = useState<string>(title);
+  const [tempContent, setTempContent] = useState<string>(content);
+
+
+  const handleOnChangeTitle=(e:React.ChangeEvent<HTMLTextAreaElement>)=>{
+    if(title) setTitleError("")
+    setTitle(e.target.value)
+  }
+
+  const handleIsEditable=(bool:boolean)=>{
+    setIsEditable(bool)
+    editor?.setEditable(bool)
+  }
+
+  const handleOnChangeContent=({editor}:any)=>{
+    if(!(editor as Editor).isEmpty) setContentError("")
+    setContent((editor as Editor).getHTML())
+  }
+
+  const editor = useEditor({
+    extensions: [StarterKit],
+    onUpdate:handleOnChangeContent,
+    content: content,
+    editable:isEditable,
+  });
 
   const handleSubmit = () => {};
 
   return (
     <div className="prose w-full max-w-full mb-10">
       <h5 className="text-wh-300">{`Home > ${post.category} > ${post.title}`}</h5>
-      <div className="flex justify-between items-center">
-        <h4 className="bg-accent-orange py-2 px-5 text-wh-900 text-sm font-bold">
-          {post.category}
-        </h4>
-        <div className="mt-4 ">
-          {isEditable ? (
-            <div className="flex justify-between gap-3">
-              <button onClick={() => console.log("cancel edit")}>
-                <XMarkIcon className="h-6 w-6 text-accent-red" />
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => console.log("make edit")}>
-              <PencilSquareIcon className="h-6 w-6 text-accent-red" />
-            </button>
-          )}
-        </div>
-      </div>
+      <CategoryAndEdit
+       isEditable={isEditable}
+       handleIsEditable={handleIsEditable}
+       title={title}
+       setTitle={setTitle}
+       tempTitle={tempTitle}
+       setTempTitle={setTempTitle}
+       tempContent={tempContent}
+       setTempContent={setTempContent}
+       editor={editor}
+       post={post}
+      />
       <form onSubmit={handleSubmit}>
         <>
           {isEditable ? (
             <div>
               <textarea
-                className="border-2 rounded-md bg-wh-50 p-3 full"
+                className="border-2 rounded-md bg-wh-50 p-3 w-full"
                 placeholder="Title"
-                onChange={(e) => console.log("change title", e.target.value)}
+                onChange={(e)=>handleOnChangeTitle(e)}
+                value={title}
               />
             </div>
           ) : (
@@ -65,6 +89,19 @@ const Content = ({ post }: Props) => {
             sizes="(max-width:480px) 100vw,(max-width:768px) 85vw,(max-width:1060px) 75vw,60vw"
             style={{ objectFit: "cover" }}
           />
+        </div>
+        <div
+          className={
+            isEditable
+              ? "border-2 rounded-md bg-wh-50 p-3"
+              : "w-full max-w-full"
+          }
+        >
+          {isEditable && <>
+           <EditorMenuBar editor={editor}/>
+           <hr className="border-1 mt-2 mb-5"/>
+          </>}
+          <EditorContent editor={editor}/>
         </div>
         {isEditable && (
           <div className="flex justify-end">
